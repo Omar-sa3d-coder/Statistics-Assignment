@@ -1,25 +1,144 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36705.20 d17.14
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Statistics-Assignment", "Statistics-Assignment.csproj", "{B0536ADA-6A94-4704-8F4F-A5914C9F8A26}"
-EndProject
-Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{B0536ADA-6A94-4704-8F4F-A5914C9F8A26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B0536ADA-6A94-4704-8F4F-A5914C9F8A26}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B0536ADA-6A94-4704-8F4F-A5914C9F8A26}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B0536ADA-6A94-4704-8F4F-A5914C9F8A26}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {274FF831-C5B1-4D6E-91D5-FAEA3DB9B5A8}
-	EndGlobalSection
-EndGlobal
+using System;
+using System.Collections.Generic;
+
+class Program
+{
+    static double[] numbers = {
+        115, 182, 191, 31, 196, 1099, 5, 172, 10, 179,
+        83, 21, 20, 21, 186, 177, 195, 193, 188, 199,
+        62, 109, 105, 183, 110
+    };
+    static int n;
+
+    static void Main()
+    {
+        n = numbers.Length;
+        Sort();
+
+        Console.WriteLine($"--- Statistics for {n} values ---");
+        Console.WriteLine($"Mean:                {Mean():F4}");
+        Console.WriteLine($"Mode:                {Mode()}");
+        Console.WriteLine($"Median:              {Median():F4}");
+        Console.WriteLine($"Variance:            {Variance():F4}");
+        Console.WriteLine($"P20:                 {Percentile(20):F4}");
+        Console.WriteLine($"P50:                 {Percentile(50):F4}");
+        Console.WriteLine($"First Quartile (Q1): {Percentile(25):F4}");
+        Console.WriteLine($"Second Quartile (Q2):{Percentile(50):F4}");
+        Console.WriteLine($"Third Quartile (Q3): {Percentile(75):F4}");
+        Console.WriteLine($"Range:               {Range():F4}");
+        Console.WriteLine($"Interquartile Range: {IQR():F4}");
+        Console.WriteLine($"Standard Deviation:  {StandardDeviation():F4}");
+        Console.WriteLine($"Summation:           {Sum():F4}");
+
+        Console.WriteLine("\n--- Outlier Detection ---");
+        DetectOutliers();
+    }
+
+    static void Sort()
+    {
+        for (int i = 0; i < n - 1; i++)
+            for (int j = 0; j < n - i - 1; j++)
+                if (numbers[j] > numbers[j + 1])
+                {
+                    double temp = numbers[j];
+                    numbers[j] = numbers[j + 1];
+                    numbers[j + 1] = temp;
+                }
+    }
+
+    static double Sum()
+    {
+        double sum = 0;
+        for (int i = 0; i < n; i++)
+            sum += numbers[i];
+        return sum;
+    }
+
+    static double Mean() => Sum() / n;
+
+    static string Mode()
+    {
+        int maxCount = 0;
+        string modes = "";
+
+        for (int i = 0; i < n; i++)
+        {
+            int count = 0;
+            for (int j = 0; j < n; j++)
+                if (numbers[j] == numbers[i])
+                    count++;
+
+            if (count > maxCount)
+            {
+                maxCount = count;
+                modes = numbers[i].ToString();
+            }
+            else if (count == maxCount && !modes.Contains(numbers[i].ToString()))
+            {
+                modes += ", " + numbers[i];
+            }
+        }
+
+        if (maxCount == 1) return "No mode";
+        return modes;
+    }
+
+    static double Median() => Percentile(50);
+
+    static double Variance()
+    {
+        double mean = Mean();
+        double sum = 0;
+        for (int i = 0; i < n; i++)
+            sum += (numbers[i] - mean) * (numbers[i] - mean);
+        return sum / n;
+    }
+
+    static double StandardDeviation() => Sqrt(Variance());
+
+    static double Sqrt(double value)
+    {
+        if (value == 0) return 0;
+        double x = value;
+        for (int i = 0; i < 1000; i++)
+            x = (x + value / x) / 2.0;
+        return x;
+    }
+
+    static double Percentile(double p)
+    {
+        double index = (p / 100.0) * (n - 1);
+        int lower = (int)Floor(index);
+        int upper = lower + 1;
+        if (upper >= n) return numbers[n - 1];
+        if (lower == upper) return numbers[lower];
+        return numbers[lower] + (index - lower) * (numbers[upper] - numbers[lower]);
+    }
+
+    static double Floor(double value)
+    {
+        int intVal = (int)value;
+        return value < intVal ? intVal - 1 : intVal;
+    }
+
+    static double Range() => numbers[n - 1] - numbers[0];
+
+    static double IQR() => Percentile(75) - Percentile(25);
+
+    static void DetectOutliers()
+    {
+        double q1 = Percentile(25);
+        double q3 = Percentile(75);
+        double iqr = IQR();
+        double lowerBound = q1 - 1.5 * iqr;
+        double upperBound = q3 + 1.5 * iqr;
+
+        for (int i = 0; i < n; i++)
+        {
+            bool isOutlier = numbers[i] < lowerBound || numbers[i] > upperBound;
+            Console.WriteLine($"{numbers[i]} -> {(isOutlier ? "OUTLIER ⚠️" : "Normal")}");
+        }
+
+        Console.WriteLine($"\nBounds: [{lowerBound:F4} , {upperBound:F4}]");
+    }
+}
